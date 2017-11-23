@@ -1,4 +1,5 @@
 Update By Walter 20171123
+
 Add 'need-minus-scroll' directive to ng-drag item to toggle this function to satisify both situation
 
 
