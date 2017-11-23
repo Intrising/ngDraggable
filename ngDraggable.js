@@ -146,7 +146,6 @@ angular.module('ngDraggable', [])
             evt.preventDefault()
 
             offset = element[0].getBoundingClientRect()
-            console.log('allowTransform', allowTransform)
             if (allowTransform) { _dragOffset = offset } else {
               _dragOffset = {left: document.body.scrollLeft, top: document.body.scrollTop}
             }
