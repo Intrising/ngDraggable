@@ -22,9 +22,10 @@ angular.module('ngDraggable', [])
       return {
         restrict: 'A',
         link: function (scope, element, attrs) {
-          var _needMinusScroll = attrs.needMinusScroll ? attrs.needMinusScroll : false
-          var _dragOffsetRatioX = attrs.dragOffsetRatioX ? attrs.dragOffsetRatioX : 1
-          var _dragOffsetRatioY = attrs.dragOffsetRatioY ? attrs.dragOffsetRatioY : 1
+          var _needMinusScroll = $parse(attrs.needMinusScroll) ? $parse(attrs.needMinusScroll) : false
+          var _dragOffsetRatioX = $parse(attrs.ngDragOffsetRatioX) || null
+          var _dragOffsetRatioY = $parse(attrs.ngDragOffsetRatioY) || null
+
           scope.value = attrs.ngDrag
           var offset, _centerAnchor = false, _mx, _my, _tx, _ty, _mrx, _mry
           var _hasTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch
@@ -206,14 +207,36 @@ angular.module('ngDraggable', [])
             }
 
             // Add by Walter to control minus window.scroll or not
+            var needMinus = false
+
             if (_needMinusScroll) {
+              scope.$apply(function () {
+                needMinus = _needMinusScroll(scope, {$data: _data, $event: evt})
+              })
+            }
+
+            if (needMinus) {
               _tx -= window.scrollX
               _ty -= window.scrollY
             }
 
             // Add by Walter to handle the ratio on eagleyes
-            _tx *= _dragOffsetRatioX
-            _ty *= _dragOffsetRatioY
+            var ratioX = 1
+            var ratioY = 1
+            if (_dragOffsetRatioX) {
+              scope.$apply(function () {
+                ratioX = _dragOffsetRatioX(scope, {$data: _data, $event: evt})
+              })
+            }
+
+            if (_dragOffsetRatioY) {
+              scope.$apply(function () {
+                ratioY = _dragOffsetRatioY(scope, {$data: _data, $event: evt})
+              })
+            }
+
+            _tx *= ratioX
+            _ty *= ratioY
 
             moveElement(_tx, _ty)
 
