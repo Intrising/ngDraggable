@@ -23,6 +23,8 @@ angular.module('ngDraggable', [])
         restrict: 'A',
         link: function (scope, element, attrs) {
           var _needMinusScroll = attrs.needMinusScroll ? attrs.needMinusScroll : false
+          var _dragOffsetRatioX = attrs.dragOffsetRatioX ? attrs.dragOffsetRatioX : 1
+          var _dragOffsetRatioY = attrs.dragOffsetRatioY ? attrs.dragOffsetRatioY : 1
           scope.value = attrs.ngDrag
           var offset, _centerAnchor = false, _mx, _my, _tx, _ty, _mrx, _mry
           var _hasTouch = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch
@@ -203,11 +205,15 @@ angular.module('ngDraggable', [])
               _ty = _my - _mry - _dragOffset.top
             }
 
-            // Add by Walter to controll minus window.scroll or not
+            // Add by Walter to control minus window.scroll or not
             if (_needMinusScroll) {
               _tx -= window.scrollX
               _ty -= window.scrollY
             }
+
+            // Add by Walter to handle the ratio on eagleyes
+            _tx *= _dragOffsetRatioX
+            _ty *= _dragOffsetRatioY
 
             moveElement(_tx, _ty)
 
