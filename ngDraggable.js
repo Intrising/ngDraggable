@@ -594,22 +594,29 @@ angular.module('ngDraggable', [])
               var scrollY = 0
 
               if (config.horizontalScroll) {
-                            // If horizontal scrolling is active.
-                if (lastMouseEvent.clientX < config.activationDistance) {
+                                // If horizontal scrolling is active.
+                                // If vertical scrolling is active.
+                                // Walter add here 20190225
+                                // get touches clientX to fix bug on clientX
+                lastMouseEvent._usedToScrollX = lastMouseEvent.clientX || lastMouseEvent.originalEvent.targetTouches[0].clientX
+                if (lastMouseEvent._usedToScrollX < config.activationDistance) {
                                 // If the mouse is on the left of the viewport within the activation distance.
                   scrollX = -config.scrollDistance
-                } else if (lastMouseEvent.clientX > viewportWidth - config.activationDistance) {
+                } else if (lastMouseEvent._usedToScrollX > viewportWidth - config.activationDistance) {
                                 // If the mouse is on the right of the viewport within the activation distance.
                   scrollX = config.scrollDistance
                 }
               }
 
               if (config.verticalScroll) {
-                            // If vertical scrolling is active.
-                if (lastMouseEvent.clientY < config.activationDistance) {
+                                // If vertical scrolling is active.
+                                // Walter add here 20190225
+                                // get touches clientY to fix bug on clientY
+                lastMouseEvent._usedToScrollY = lastMouseEvent.clientY || lastMouseEvent.originalEvent.targetTouches[0].clientY
+                if (lastMouseEvent._usedToScrollY < config.activationDistance) {
                                 // If the mouse is on the top of the viewport within the activation distance.
                   scrollY = -config.scrollDistance
-                } else if (lastMouseEvent.clientY > viewportHeight - config.activationDistance) {
+                } else if (lastMouseEvent._usedToScrollY > viewportHeight - config.activationDistance) {
                                 // If the mouse is on the bottom of the viewport within the activation distance.
                   scrollY = config.scrollDistance
                 }
