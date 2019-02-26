@@ -643,23 +643,22 @@ angular.module('ngDraggable', [])
               var elementTransform 
               
               if (scrollX !== 0 || scrollY !== 0) {
-                elementTransform = element.css('transform')
                             // Record the current scroll position.
-                console.log('$window is', $window)
-                console.log('window is', window)
+                // console.log('$window is', $window)
+                // console.log('window is', window)
                 // $window == window == outter window
                 // $docuemnt is jq object of inner window document
                 // document is DOM of inner window document
-                console.log('$document is', $document)
-                console.log('document is', document)
-                console.log('element is', element)
+                // console.log('$document is', $document)
+                // console.log('document is', document)
+                // console.log('element is', element)
 
                 // Add by Walter 20190226
                 // Hack to use it in cloud, because if in cloud
                 // there are vue window and angular window to scroll
                 // ngDraggable will scroll the vue window, which has no effect at all
                 // so detect the url here, if it is in cloud, need to do workaround.
-                if ($window.location.origin.includes('www.evo-ip.io')) {
+                if ($window.location.origin.includes('www.evo-ip.io') || $window.location.origin.includes('www.eagleyes.io')) {
 
                   var innerScrollTarget = document.querySelector('.main')
 
@@ -668,12 +667,19 @@ angular.module('ngDraggable', [])
                   var currentScrollTop = innerScrollTarget.scrollTop
                   console.log('currscrollLeft' , currentScrollLeft)
                   console.log('curescrotop', currentScrollTop)
-
+                  console.log('$window.pageXOffset', $window.pageXOffset)
+                  console.log('$window.pageYOffset', $window.pageYOffset)
+  
+                  var elementTransformX = element.css('transformX')
+                  var elementTransformY = element.css('transformY')
+                  console.log('elementTransformX', elementTransformX)
+                  console.log('elementTransformY', elementTransformY)
                   element.css('transform', 'initial')
+
                   innerScrollTarget.scrollBy(scrollX, scrollY)
                   
-                  horizontalScrollAmount = ($window.pageXOffset || innerScrollTarget.scrollLeft) - currentScrollLeft
-                  verticalScrollAmount = ($window.pageYOffset || innerScrollTarget.scrollTop) - currentScrollTop
+                  horizontalScrollAmount = $window.pageXOffset
+                  verticalScrollAmount = $window.pageYOffset
 
                   console.log('findal horizonsScrollAMount', horizontalScrollAmount)
                   console.log('final vertical amo', verticalScrollAmount)
@@ -692,9 +698,9 @@ angular.module('ngDraggable', [])
                   verticalScrollAmount = ($window.pageYOffset || $document[0].documentElement.scrollTop) - currentScrollTop
                 }
                 console.log('element transform ouu', elementTransform)
-
+                
                 element.css('transform', elementTransform)
-
+                
                 lastMouseEvent.pageX += horizontalScrollAmount
                 lastMouseEvent.pageY += verticalScrollAmount
 
