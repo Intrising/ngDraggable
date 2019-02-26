@@ -18,7 +18,7 @@ angular.module('ngDraggable', [])
 
       scope.touchTimeout = 100
     }])
-    .directive('ngDrag', ['$rootScope', '$parse', '$document', '$window', 'ngDraggable', function ($rootScope, $parse, $document, $window, ngDraggable) {
+    .directive('ngDrag', ['$rootScope', '$parse', '$document', '$window', 'ngDraggable', '$timeout', function ($rootScope, $parse, $document, $window, ngDraggable, $timeout) {
       return {
         restrict: 'A',
         link: function (scope, element, attrs) {
@@ -189,8 +189,10 @@ angular.module('ngDraggable', [])
               $rootScope.$broadcast('draggable:start', {x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data})
 
               if (onDragStartCallback) {
-                scope.$apply(function () {
-                  onDragStartCallback(scope, {$data: _data, $event: evt})
+                $timeout(function () {
+                  scope.$apply(function () {
+                    onDragStartCallback(scope, {$data: _data, $event: evt})
+                  })
                 })
               }
             }
@@ -210,8 +212,10 @@ angular.module('ngDraggable', [])
             var needMinus = false
 
             if (_needMinusScroll) {
-              scope.$apply(function () {
-                needMinus = _needMinusScroll(scope, {$data: _data, $event: evt})
+              $timeout(function () {
+                scope.$apply(function () {
+                  needMinus = _needMinusScroll(scope, {$data: _data, $event: evt})
+                })
               })
             }
 
@@ -224,14 +228,18 @@ angular.module('ngDraggable', [])
             var ratioX = 1
             var ratioY = 1
             if (_dragOffsetRatioX) {
-              scope.$apply(function () {
-                ratioX = _dragOffsetRatioX(scope, {$data: _data, $event: evt})
+              $timeout(function () {
+                scope.$apply(function () {
+                  ratioX = _dragOffsetRatioX(scope, {$data: _data, $event: evt})
+                })
               })
             }
 
             if (_dragOffsetRatioY) {
-              scope.$apply(function () {
-                ratioY = _dragOffsetRatioY(scope, {$data: _data, $event: evt})
+              $timeout(function () {
+                scope.$apply(function () {
+                  ratioY = _dragOffsetRatioY(scope, {$data: _data, $event: evt})
+                })
               })
             }
 
@@ -254,8 +262,10 @@ angular.module('ngDraggable', [])
             $document.off(_releaseEvents, onrelease)
 
             if (onDragStopCallback) {
-              scope.$apply(function () {
-                onDragStopCallback(scope, {$data: _data, $event: evt})
+              $timeout(function () {
+                scope.$apply(function () {
+                  onDragStopCallback(scope, {$data: _data, $event: evt})
+                })
               })
             }
 
@@ -265,8 +275,10 @@ angular.module('ngDraggable', [])
           var onDragComplete = function (evt) {
             if (!onDragSuccessCallback) return
 
-            scope.$apply(function () {
-              onDragSuccessCallback(scope, {$data: _data, $event: evt})
+            $timeout(function () {
+              scope.$apply(function () {
+                onDragSuccessCallback(scope, {$data: _data, $event: evt})
+              })
             })
           }
 
@@ -454,8 +466,10 @@ angular.module('ngDraggable', [])
               _allowClone = obj.data.allowClone
             }
             if (_allowClone) {
-              scope.$apply(function () {
-                scope.clonedData = obj.data
+              $timeout(function () {
+                scope.$apply(function () {
+                  scope.clonedData = obj.data
+                })
               })
               element.css('width', obj.element[0].offsetWidth)
               element.css('height', obj.element[0].offsetHeight)
@@ -549,7 +563,7 @@ angular.module('ngDraggable', [])
         link: function (scope, element, attrs) {
           var intervalPromise = null
           var lastMouseEvent = null
-
+            
           var config = {
             verticalScroll: attrs.verticalScroll || true,
             horizontalScroll: attrs.horizontalScroll || true,
@@ -576,9 +590,11 @@ angular.module('ngDraggable', [])
               var args = Array.prototype.slice.call(arguments)
               if (animationIsOn) {
                 reqAnimFrame(function () {
-                  $rootScope.$apply(function () {
-                    callback.apply(null, args)
-                    nextFrame(callback)
+                  $timeout(function () {
+                    $rootScope.$apply(function () {
+                      callback.apply(null, args)
+                      nextFrame(callback)
+                    })
                   })
                 })
               }
@@ -621,21 +637,61 @@ angular.module('ngDraggable', [])
                   scrollY = config.scrollDistance
                 }
               }
-
+              
+              var horizontalScrollAmount = 0
+              var verticalScrollAmount = 0
+              var elementTransform 
+              
               if (scrollX !== 0 || scrollY !== 0) {
+                elementTransform = element.css('transform')
                             // Record the current scroll position.
-                var currentScrollLeft = ($window.pageXOffset || $document[0].documentElement.scrollLeft)
-                var currentScrollTop = ($window.pageYOffset || $document[0].documentElement.scrollTop)
+                console.log('$window is', $window)
+                console.log('window is', window)
+                // $window == window == outter window
+                // $docuemnt is jq object of inner window document
+                // document is DOM of inner window document
+                console.log('$document is', $document)
+                console.log('document is', document)
+                console.log('element is', element)
 
-                            // Remove the transformation from the element, scroll the window by the scroll distance
-                            // record how far we scrolled, then reapply the element transformation.
-                var elementTransform = element.css('transform')
-                element.css('transform', 'initial')
+                // Add by Walter 20190226
+                // Hack to use it in cloud, because if in cloud
+                // there are vue window and angular window to scroll
+                // ngDraggable will scroll the vue window, which has no effect at all
+                // so detect the url here, if it is in cloud, need to do workaround.
+                if ($window.location.origin.includes('www.evo-ip.io')) {
 
-                $window.scrollBy(scrollX, scrollY)
+                  var innerScrollTarget = document.querySelector('.main')
 
-                var horizontalScrollAmount = ($window.pageXOffset || $document[0].documentElement.scrollLeft) - currentScrollLeft
-                var verticalScrollAmount = ($window.pageYOffset || $document[0].documentElement.scrollTop) - currentScrollTop
+                  console.log('inner Scroll target is', innerScrollTarget)
+                  var currentScrollLeft = innerScrollTarget.scrollLeft
+                  var currentScrollTop = innerScrollTarget.scrollTop
+                  console.log('currscrollLeft' , currentScrollLeft)
+                  console.log('curescrotop', currentScrollTop)
+
+                  element.css('transform', 'initial')
+                  innerScrollTarget.scrollBy(scrollX, scrollY)
+                  
+                  horizontalScrollAmount = ($window.pageXOffset || innerScrollTarget.scrollLeft) - currentScrollLeft
+                  verticalScrollAmount = ($window.pageYOffset || innerScrollTarget.scrollTop) - currentScrollTop
+
+                  console.log('findal horizonsScrollAMount', horizontalScrollAmount)
+                  console.log('final vertical amo', verticalScrollAmount)
+
+                } else {
+                  var currentScrollLeft = ($window.pageXOffset || $document[0].documentElement.scrollLeft)
+                  var currentScrollTop = ($window.pageYOffset || $document[0].documentElement.scrollTop)
+  
+                              // Remove the transformation from the element, scroll the window by the scroll distance
+                              // record how far we scrolled, then reapply the element transformation.
+                  element.css('transform', 'initial')
+  
+                  $window.scrollBy(scrollX, scrollY)
+  
+                  horizontalScrollAmount = ($window.pageXOffset || $document[0].documentElement.scrollLeft) - currentScrollLeft
+                  verticalScrollAmount = ($window.pageYOffset || $document[0].documentElement.scrollTop) - currentScrollTop
+                }
+                console.log('element transform ouu', elementTransform)
 
                 element.css('transform', elementTransform)
 
