@@ -218,10 +218,10 @@ angular.module('ngDraggable', [])
                 })
               })
             }
-
-            if (needMinus) {
+            if (needMinus) {            
               _tx -= window.scrollX
               _ty -= window.scrollY
+              
             }
 
             // Add by Walter to handle the ratio on eagleyes
@@ -245,6 +245,8 @@ angular.module('ngDraggable', [])
 
             _tx *= ratioX
             _ty *= ratioY
+
+            console.log('final x,y in moveElement', _tx, _ty)
 
             moveElement(_tx, _ty)
 
@@ -640,67 +642,64 @@ angular.module('ngDraggable', [])
               
               var horizontalScrollAmount = 0
               var verticalScrollAmount = 0
-              var elementTransform 
+              var currentScrollLeft = 0
+              var currentScrollTop = 0
               
               if (scrollX !== 0 || scrollY !== 0) {
                             // Record the current scroll position.
-                // console.log('$window is', $window)
-                // console.log('window is', window)
-                // $window == window == outter window
-                // $docuemnt is jq object of inner window document
-                // document is DOM of inner window document
-                // console.log('$document is', $document)
-                // console.log('document is', document)
-                // console.log('element is', element)
+                            // Add by Walter 20190226
+                            // $window == window == outter window
+                            // $docuemnt is jq object of inner window document
+                            // document is DOM of inner window document
 
-                // Add by Walter 20190226
-                // Hack to use it in cloud, because if in cloud
-                // there are vue window and angular window to scroll
-                // ngDraggable will scroll the vue window, which has no effect at all
-                // so detect the url here, if it is in cloud, need to do workaround.
+                            // Hack to use it in cloud, because if in cloud
+                            // there are vue window and angular window to scroll
+                            // ngDraggable will scroll the vue window, which has no effect at all
+                            // so detect the url here, if it is in cloud, need to do workaround.
                 if ($window.location.origin.includes('www.evo-ip.io') || $window.location.origin.includes('www.eagleyes.io')) {
 
                   var innerScrollTarget = document.querySelector('.main')
 
-                  console.log('inner Scroll target is', innerScrollTarget)
-                  var currentScrollLeft = innerScrollTarget.scrollLeft
-                  var currentScrollTop = innerScrollTarget.scrollTop
-                  console.log('currscrollLeft' , currentScrollLeft)
-                  console.log('curescrotop', currentScrollTop)
-                  console.log('$window.pageXOffset', $window.pageXOffset)
-                  console.log('$window.pageYOffset', $window.pageYOffset)
+                  currentScrollLeft = innerScrollTarget.scrollLeft
+                  currentScrollTop = innerScrollTarget.scrollTop
   
-                  var elementTransformX = element.css('transformX')
-                  var elementTransformY = element.css('transformY')
-                  console.log('elementTransformX', elementTransformX)
-                  console.log('elementTransformY', elementTransformY)
+                  var elementTransform = element.css('transform')
                   element.css('transform', 'initial')
-
-                  innerScrollTarget.scrollBy(scrollX, scrollY)
                   
-                  horizontalScrollAmount = $window.pageXOffset
-                  verticalScrollAmount = $window.pageYOffset
+                  console.log('element transform ouu', elementTransform)
+                  // element.css('transform', 'initial')
+                  console.log('scrollAmount', scrollX, scrollY)
+                  
+                  innerScrollTarget.scrollBy(scrollX, scrollY)
+                  element.css('transform', elementTransform)
 
-                  console.log('findal horizonsScrollAMount', horizontalScrollAmount)
-                  console.log('final vertical amo', verticalScrollAmount)
+                  horizontalScrollAmount = ($window.pageXOffset || document.documentElement.scrollLeft) - currentScrollLeft
+                  verticalScrollAmount = ($window.pageYOffset || document.documentElement.scrollTop) - currentScrollTop
+                  console.log('horizontalScrollAmount', horizontalScrollAmount)
+                  console.log('verticalScrollAmount', verticalScrollAmount)
+                  console.log('lasteMouseEvent', lastMouseEvent)
+                  console.log('event.target.offsetY', lastMouseEvent.target.offsetHeight)
 
                 } else {
-                  var currentScrollLeft = ($window.pageXOffset || $document[0].documentElement.scrollLeft)
-                  var currentScrollTop = ($window.pageYOffset || $document[0].documentElement.scrollTop)
-  
+                  currentScrollLeft = ($window.pageXOffset || $document[0].documentElement.scrollLeft)
+                  currentScrollTop = ($window.pageYOffset || $document[0].documentElement.scrollTop)
                               // Remove the transformation from the element, scroll the window by the scroll distance
                               // record how far we scrolled, then reapply the element transformation.
+                  var elementTransform = element.css('transform')
                   element.css('transform', 'initial')
-  
+                  console.log('element transform ouu', elementTransform)
+                  
                   $window.scrollBy(scrollX, scrollY)
-  
+
+                  element.css('transform', elementTransform)
                   horizontalScrollAmount = ($window.pageXOffset || $document[0].documentElement.scrollLeft) - currentScrollLeft
                   verticalScrollAmount = ($window.pageYOffset || $document[0].documentElement.scrollTop) - currentScrollTop
                 }
-                console.log('element transform ouu', elementTransform)
-                
-                element.css('transform', elementTransform)
-                
+                // lastMouseEvent.pageX might be undefined .......
+                // lastMouseEvent.pageY might be undefined .......
+                // set this to vaoid NaN
+                if (!lastMouseEvent.pageX) lastMouseEvent.pageX = 0
+                if (!lastMouseEvent.pageY) lastMouseEvent.pageY = 0
                 lastMouseEvent.pageX += horizontalScrollAmount
                 lastMouseEvent.pageY += verticalScrollAmount
 
