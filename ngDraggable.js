@@ -247,10 +247,13 @@ angular.module('ngDraggable', [])
             _ty *= ratioY
             
             // modify x, y here cause here has event
+            
             console.log('evet in onMove', evt)
-            console.log('evt.origEvent.touches[0].clientY is', evt.originalEvent.targetTouches[0].clientY)
-            console.log('evt.origEvent.touches[0].screenY is', evt.originalEvent.targetTouches[0].screenY)
-            console.log('final x,y in moveElement', _tx, _ty)
+            if (evt.type === 'touchmove') {
+              console.log('evt.origEvent.touches[0].clientY is', evt.originalEvent.targetTouches[0].clientY)
+              console.log('evt.origEvent.touches[0].screenY is', evt.originalEvent.targetTouches[0].screenY)
+              console.log('final x,y in moveElement', _tx, _ty)
+            }
             moveElement(_tx, _ty)
 
             $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset })
