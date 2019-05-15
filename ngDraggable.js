@@ -182,6 +182,10 @@ angular.module('ngDraggable', [])
           var onmove = function (evt) {
             if (!_dragEnabled) return
             evt.preventDefault()
+            evt._scrollOffsetY = 0
+            if (evt._addOffsetPosition === undefined) {
+              evt._addOffsetPosition = 'onmove()'
+            }
 
             if (!element.hasClass('dragging')) {
               _data = getDragData(scope)
@@ -218,7 +222,7 @@ angular.module('ngDraggable', [])
                 })
               })
             }
-            if (needMinus) {            
+            if (needMinus) { 
               _tx -= window.scrollX
               _ty -= window.scrollY
               
@@ -247,16 +251,14 @@ angular.module('ngDraggable', [])
             _ty *= ratioY
             
             // modify x, y here cause here has event
-            
-            console.log('evet in onMove', evt)
-            if (evt.type === 'touchmove') {
-              console.log('evt.origEvent.touches[0].clientY is', evt.originalEvent.targetTouches[0].clientY)
-              console.log('evt.origEvent.touches[0].screenY is', evt.originalEvent.targetTouches[0].screenY)
-              console.log('final x,y in moveElement', _tx, _ty)
+            // console.log('element.attr', )
+            // console.log(typeof element.attr('_scrolling'))
+            if (element.attr('_scrolling') === 'true') {
+              _ty += document.querySelector('.main').scrollTop
             }
             moveElement(_tx, _ty)
 
-            $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset })
+            $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset, _scrolling: element.attr('_scrolling') === 'true' })
           }
 
           var onrelease = function (evt) {
@@ -575,7 +577,7 @@ angular.module('ngDraggable', [])
           var config = {
             verticalScroll: attrs.verticalScroll || true,
             horizontalScroll: attrs.horizontalScroll || true,
-            activationDistance: attrs.activationDistance || 75,
+            activationDistance: attrs.activationDistance || 15,
             scrollDistance: attrs.scrollDistance || 15
           }
 
@@ -611,6 +613,8 @@ angular.module('ngDraggable', [])
             nextFrame(function () {
               if (!lastMouseEvent) return
 
+              lastMouseEvent._addOffsetPosition = 'nextFrame()'
+              var innerScrollTarget = document.querySelector('.main')
               var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
               var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
 
@@ -626,7 +630,7 @@ angular.module('ngDraggable', [])
                 if (lastMouseEvent._usedToScrollX < config.activationDistance) {
                                 // If the mouse is on the left of the viewport within the activation distance.
                   scrollX = -config.scrollDistance
-                } else if (lastMouseEvent._usedToScrollX > viewportWidth - config.activationDistance) {
+                } else if (lastMouseEvent._usedToScrollX > (viewportWidth - config.activationDistance)){
                                 // If the mouse is on the right of the viewport within the activation distance.
                   scrollX = config.scrollDistance
                 }
@@ -662,48 +666,40 @@ angular.module('ngDraggable', [])
                             // there are vue window and angular window to scroll
                             // ngDraggable will scroll the vue window, which has no effect at all
                             // so detect the url here, if it is in cloud, need to do workaround.
-                if ($window.location.origin.includes('www.evo-ip.io') || $window.location.origin.includes('www.eagleyes.io')) {
+                // if ($window.location.origin.includes('www.evo-ip.io') || $window.location.origin.includes('www.eagleyes.io')) {
+                currentScrollTop = innerScrollTarget.scrollTop
+                currentScrollLeft = innerScrollTarget.scrollLeft
 
-                  var innerScrollTarget = document.querySelector('.main')
+                var elementTransform = element.css('transform')
+                element.css('transform', 'initial')
+                
+                innerScrollTarget.scrollBy(scrollX, scrollY)
 
-                  currentScrollLeft = innerScrollTarget.scrollLeft
-                  currentScrollTop = innerScrollTarget.scrollTop
-  
-                  var elementTransform = element.css('transform')
-                  element.css('transform', 'initial')
-                  
-                  // element.css('transform', 'initial')
-                  
-                  innerScrollTarget.scrollBy(scrollX, scrollY)
-                  element.css('transform', elementTransform)
+                console.error('pageYOffset', $window.pageYOffset)
+                console.log('scrollTop', innerScrollTarget.scrollTop)
 
-                  horizontalScrollAmount = ($window.pageXOffset || document.documentElement.scrollLeft) - currentScrollLeft
-                  verticalScrollAmount = ($window.pageYOffset || document.documentElement.scrollTop) - currentScrollTop
+                
+                verticalScrollAmount = ($window.pageYOffset || innerScrollTarget.scrollTop) - currentScrollTop
+                horizontalScrollAmount = innerScrollTarget.scrollLeft - currentScrollLeft
 
-                } else {
-                  currentScrollLeft = ($window.pageXOffset || $document[0].documentElement.scrollLeft)
-                  currentScrollTop = ($window.pageYOffset || $document[0].documentElement.scrollTop)
-                              // Remove the transformation from the element, scroll the window by the scroll distance
-                              // record how far we scrolled, then reapply the element transformation.
-                  var elementTransform = element.css('transform')
-                  element.css('transform', 'initial')
-                  console.log('element transform ouu', elementTransform)
-                  $window.scrollBy(scrollX, scrollY)
+                element.css('transform', elementTransform)
+                element.attr('_scrolling', true)
+                // horizontalScrollAmount = ($window.pageXOffset || document.documentElement.scrollLeft) - currentScrollLeft
 
-                  element.css('transform', elementTransform)
-                  horizontalScrollAmount = ($window.pageXOffset || $document[0].documentElement.scrollLeft) - currentScrollLeft
-                  verticalScrollAmount = ($window.pageYOffset || $document[0].documentElement.scrollTop) - currentScrollTop
-                }
                 // lastMouseEvent.pageX might be undefined .......
                 // lastMouseEvent.pageY might be undefined .......
-                // set this to vaoid NaN
-                if (!lastMouseEvent.pageX) lastMouseEvent.pageX = 0
-                if (!lastMouseEvent.pageY) lastMouseEvent.pageY = 0
-                lastMouseEvent.pageX += horizontalScrollAmount
+                // set this to avoid NaN
+                // if (!lastMouseEvent.pageX) lastMouseEvent.pageX = 0
+                // if (!lastMouseEvent.pageY) lastMouseEvent.pageY = 0
+                console.log('b4 pageX', lastMouseEvent.pageX)
+                console.log('b4 pageY', lastMouseEvent.pageY)
                 lastMouseEvent.pageY += verticalScrollAmount
-
-                $rootScope.$emit('draggable:_triggerHandlerMove', lastMouseEvent)
-              }
+                lastMouseEvent.pageX += horizontalScrollAmount
+                console.log('final pageX', lastMouseEvent.pageX)
+                console.log('final pageY', lastMouseEvent.pageY)
+                lastMouseEvent._scrollOffsetY = verticalScrollAmount
+              } 
+              $rootScope.$emit('draggable:_triggerHandlerMove', lastMouseEvent)
             })
           }
 
@@ -728,8 +724,9 @@ angular.module('ngDraggable', [])
           scope.$on('draggable:move', function (event, obj) {
                     // Ignore this event if it's not for this element.
             if (obj.element[0] !== element[0]) return
-
+            
             lastMouseEvent = obj.event
+            lastMouseEvent._scrolling = obj._scrolling
           })
         }
       }
