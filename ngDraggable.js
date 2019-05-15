@@ -182,10 +182,6 @@ angular.module('ngDraggable', [])
           var onmove = function (evt) {
             if (!_dragEnabled) return
             evt.preventDefault()
-            evt._scrollOffsetY = 0
-            if (evt._addOffsetPosition === undefined) {
-              evt._addOffsetPosition = 'onmove()'
-            }
 
             if (!element.hasClass('dragging')) {
               _data = getDragData(scope)
@@ -252,13 +248,19 @@ angular.module('ngDraggable', [])
             
             // modify x, y here cause here has event
             // console.log('element.attr', )
-            // console.log(typeof element.attr('_scrolling'))
-            if (element.attr('_scrolling') === 'true') {
-              _ty += document.querySelector('.main').scrollTop
+            if (element.attr('_scrolledY') !== undefined && element.attr('_scrolledY') !== 'none') {
+              console.log('_scrolled', element.attr('_scrolledY'))
+              _ty += parseFloat(element.attr('_scrolledY'))
             }
+
+            if (element.attr('_scrolledX') !== undefined && element.attr('_scrolledX') !== 'none') {
+              console.log('_scrolledX', element.attr('_scrolledX'))
+              _tx += parseFloat(element.attr('_scrolledX'))
+            }
+            
             moveElement(_tx, _ty)
 
-            $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset, _scrolling: element.attr('_scrolling') === 'true' })
+            $rootScope.$broadcast('draggable:move', { x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, uid: _myid, dragOffset: _dragOffset})
           }
 
           var onrelease = function (evt) {
@@ -266,6 +268,8 @@ angular.module('ngDraggable', [])
             evt.preventDefault()
             $rootScope.$broadcast('draggable:end', {x: _mx, y: _my, tx: _tx, ty: _ty, event: evt, element: element, data: _data, callback: onDragComplete, uid: _myid})
             element.removeClass('dragging')
+            element.attr('_scrolledX', 'none')
+            element.attr('_scrolledY', 'none')
             element.parent().find('.drag-enter').removeClass('drag-enter')
             reset()
             $document.off(_moveEvents, onmove)
@@ -650,8 +654,8 @@ angular.module('ngDraggable', [])
                 }
               }
               
-              var horizontalScrollAmount = 0
-              var verticalScrollAmount = 0
+              var scrollOffsetXSinceDragStart = 0
+              var scrollOffsetYSinceDragStart = 0
               var currentScrollLeft = 0
               var currentScrollTop = 0
               
@@ -674,30 +678,35 @@ angular.module('ngDraggable', [])
                 element.css('transform', 'initial')
                 
                 innerScrollTarget.scrollBy(scrollX, scrollY)
-
-                console.error('pageYOffset', $window.pageYOffset)
-                console.log('scrollTop', innerScrollTarget.scrollTop)
-
                 
-                verticalScrollAmount = ($window.pageYOffset || innerScrollTarget.scrollTop) - currentScrollTop
-                horizontalScrollAmount = innerScrollTarget.scrollLeft - currentScrollLeft
+                scrollOffsetYSinceDragStart = innerScrollTarget.scrollTop - currentScrollTop
+                scrollOffsetXSinceDragStart = innerScrollTarget.scrollLeft - currentScrollLeft
 
                 element.css('transform', elementTransform)
-                element.attr('_scrolling', true)
-                // horizontalScrollAmount = ($window.pageXOffset || document.documentElement.scrollLeft) - currentScrollLeft
+                // record how far the element scrolled and recored it in the attr
+                if (element.attr('_scrolledY') === undefined || element.attr('_scrolledY') === 'none') {
+                  element.attr('_scrolledY', scrollOffsetYSinceDragStart)
+                } else {
+                  var after = parseFloat(element.attr('_scrolledY')) + scrollOffsetYSinceDragStart
+                  element.attr('_scrolledY', after)
+                }
 
-                // lastMouseEvent.pageX might be undefined .......
-                // lastMouseEvent.pageY might be undefined .......
-                // set this to avoid NaN
-                // if (!lastMouseEvent.pageX) lastMouseEvent.pageX = 0
-                // if (!lastMouseEvent.pageY) lastMouseEvent.pageY = 0
+                if (element.attr('_scrolledX') === undefined || element.attr('_scrolledX') === 'none') {
+                  element.attr('_scrolledX', scrollOffsetYSinceDragStart)
+                } else {
+                  var after = parseFloat(element.attr('_scrolledX')) + scrollOffsetXSinceDragStart
+                  element.attr('_scrolledX', after)
+                }
+
+                if (!lastMouseEvent.pageX) lastMouseEvent.pageX = 0
+                if (!lastMouseEvent.pageY) lastMouseEvent.pageY = 0
                 console.log('b4 pageX', lastMouseEvent.pageX)
                 console.log('b4 pageY', lastMouseEvent.pageY)
-                lastMouseEvent.pageY += verticalScrollAmount
-                lastMouseEvent.pageX += horizontalScrollAmount
+                lastMouseEvent.pageY += scrollOffsetYSinceDragStart
+                lastMouseEvent.pageX += scrollOffsetXSinceDragStart
                 console.log('final pageX', lastMouseEvent.pageX)
                 console.log('final pageY', lastMouseEvent.pageY)
-                lastMouseEvent._scrollOffsetY = verticalScrollAmount
+                lastMouseEvent._scrollOffsetYSinceDragStart = scrollOffsetYSinceDragStart
               } 
               $rootScope.$emit('draggable:_triggerHandlerMove', lastMouseEvent)
             })
@@ -717,7 +726,6 @@ angular.module('ngDraggable', [])
           scope.$on('draggable:end', function (event, obj) {
                     // Ignore this event if it's not for this element.
             if (obj.element[0] !== element[0]) return
-
             if (animationIsOn) clearInterval()
           })
 
@@ -726,7 +734,6 @@ angular.module('ngDraggable', [])
             if (obj.element[0] !== element[0]) return
             
             lastMouseEvent = obj.event
-            lastMouseEvent._scrolling = obj._scrolling
           })
         }
       }
