@@ -571,19 +571,20 @@ angular.module('ngDraggable', [])
         }
       }
     }])
-    .directive('ngDragScroll', ['$window', '$interval', '$timeout', '$document', '$rootScope', function ($window, $interval, $timeout, $document, $rootScope) {
+    .directive('ngDragScroll', ['$window', '$interval', '$timeout', '$document', '$rootScope', '$parse', function ($window, $interval, $timeout, $document, $rootScope, $parse) {
       return {
         restrict: 'A',
         link: function (scope, element, attrs) {
           var intervalPromise = null
           var lastMouseEvent = null
-            
+          
           var config = {
             verticalScroll: attrs.verticalScroll || true,
             horizontalScroll: attrs.horizontalScroll || true,
             activationDistance: attrs.activationDistance || 15,
-            scrollDistance: attrs.scrollDistance || 15
+            scrollDistance: attrs.scrollDistance || 15, 
           }
+          scrollTarget = angular.element(element).attr('scroll-target') || 'main'
 
           var reqAnimFrame = (function () {
             return window.requestAnimationFrame ||
@@ -618,7 +619,9 @@ angular.module('ngDraggable', [])
               if (!lastMouseEvent) return
 
               lastMouseEvent._addOffsetPosition = 'nextFrame()'
-              var innerScrollTarget = document.querySelector('.main')
+              var innerScrollTarget = document.querySelector("."+scrollTarget)
+              var scrollTargetRect = innerScrollTarget.getBoundingClientRect()
+              console.log('rect', scrollTargetRect.width)
               var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
               var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
 
@@ -631,10 +634,10 @@ angular.module('ngDraggable', [])
                                 // Walter add here 20190225
                                 // get touches clientX to fix bug on clientX
                 lastMouseEvent._usedToScrollX = lastMouseEvent.clientX || lastMouseEvent.originalEvent.targetTouches[0].clientX
-                if (lastMouseEvent._usedToScrollX < config.activationDistance) {
+                if (lastMouseEvent._usedToScrollX < (scrollTargetRect.left + config.activationDistance)) {
                                 // If the mouse is on the left of the viewport within the activation distance.
                   scrollX = -config.scrollDistance
-                } else if (lastMouseEvent._usedToScrollX > (viewportWidth - config.activationDistance)){
+                } else if (lastMouseEvent._usedToScrollX > (scrollTargetRect.right - config.activationDistance)){
                                 // If the mouse is on the right of the viewport within the activation distance.
                   scrollX = config.scrollDistance
                 }
@@ -645,10 +648,11 @@ angular.module('ngDraggable', [])
                                 // Walter add here 20190225
                                 // get touches clientY to fix bug on clientY
                 lastMouseEvent._usedToScrollY = lastMouseEvent.clientY || lastMouseEvent.originalEvent.targetTouches[0].clientY
-                if (lastMouseEvent._usedToScrollY < config.activationDistance) {
+                console.log('scroll Y', lastMouseEvent._usedToScrollY)
+                if (lastMouseEvent._usedToScrollY < (scrollTargetRect.top + config.activationDistance)) {
                                 // If the mouse is on the top of the viewport within the activation distance.
                   scrollY = -config.scrollDistance
-                } else if (lastMouseEvent._usedToScrollY > viewportHeight - config.activationDistance) {
+                } else if (lastMouseEvent._usedToScrollY > (scrollTargetRect.bottom - config.activationDistance)) {
                                 // If the mouse is on the bottom of the viewport within the activation distance.
                   scrollY = config.scrollDistance
                 }
@@ -676,7 +680,8 @@ angular.module('ngDraggable', [])
 
                 var elementTransform = element.css('transform')
                 element.css('transform', 'initial')
-                
+                console.log('going to scroll', innerScrollTarget)
+                console.log('going to scroll', scrollX, scrollY)
                 innerScrollTarget.scrollBy(scrollX, scrollY)
                 
                 scrollOffsetYSinceDragStart = innerScrollTarget.scrollTop - currentScrollTop
