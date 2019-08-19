@@ -584,7 +584,7 @@ angular.module('ngDraggable', [])
             activationDistance: attrs.activationDistance || 15,
             scrollDistance: attrs.scrollDistance || 15, 
           }
-          scrollTarget = angular.element(element).attr('scroll-target') || 'main'
+          scrollTarget = angular.element(element).attr('scroll-target')
 
           var reqAnimFrame = (function () {
             return window.requestAnimationFrame ||
@@ -619,9 +619,10 @@ angular.module('ngDraggable', [])
               if (!lastMouseEvent) return
 
               lastMouseEvent._addOffsetPosition = 'nextFrame()'
-              var innerScrollTarget = document.querySelector("."+scrollTarget)
+              var innerScrollTarget = scrollTarget.length !== 0 ? document.querySelector("."+scrollTarget) : document.querySelector("body")
+              console.log('target', innerScrollTarget)
               var scrollTargetRect = innerScrollTarget.getBoundingClientRect()
-              console.log('rect', scrollTargetRect.width)
+              console.log('rect', scrollTargetRect)
               var viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
               var viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
 
